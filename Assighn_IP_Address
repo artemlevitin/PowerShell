@@ -1,7 +1,7 @@
-$IP = "10.0.0.5"
+$IP = "10.0.0.7"
 $MaskBits = 24 # This means subnet mask = 255.255.255.0
-$Gateway = "10.0.0.1"
-$Dns1 = "10.0.0.1"
+$Gateway = "10.0.0.254"
+$Dns = "10.0.0.1, 10.0.0.2"
 $IPType = "IPv4"
 
 # Retrieve the network adapter that you want to configure
@@ -20,4 +20,4 @@ $adapter | New-NetIPAddress `
  -PrefixLength $MaskBits `
  -DefaultGateway $Gateway
 # Configure the DNS client server IP addresses
-#$adapter | Set-DnsClientServerAddress -ServerAddresses $DNS
+$adapter | Set-DnsClientServerAddress -ServerAddresses $DNS
