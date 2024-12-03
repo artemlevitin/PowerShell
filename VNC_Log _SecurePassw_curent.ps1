@@ -42,6 +42,8 @@ $numHost= Read-Host -Prompt 'Please type 4 last numbers of host'
 
 if ($numHost-match '^\d{4}$'){
 $hostName= 'ha01wvaw'+ $numHost
+if((Test-Connection $hostName -Quiet -Count 1)-eq $False){
+Write-Host "Host is unreachable"; break}
  
 $filePasw= Get-ChildItem -path $PSScriptRoot -filter *.psw -file -ErrorAction silentlycontinue -recurse
 $user= $filePasw[0].BaseName
