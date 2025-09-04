@@ -1,5 +1,6 @@
 $computerList=@{}
 $userList=@{}
+$currentUtcDate=(Get-Date).ToUniversalTime()
 
 function Run_VNC {
 
@@ -28,14 +29,37 @@ catch{ $dnsName = $ipAddress}
 }
  }
 
+ function GetDateInfo{
+param($strDate)
+$utcDateTime = Get-Date $strDate
+return $utcDateTime.ToLocalTime()
+ }
+ 
 function GetUserName{
 param($loginName)
  if(-not $userList.Contains($loginName) ){
- $user = Get-ADuser $loginName.Trim("GER\") 
+  
+ if(-not $loginName.Contains("\")) {
+   $userList[$loginName]= $loginName
+ }
+ else{
+
+ $user = Get-ADuser $loginName.Split('\',2)[1] -server ($loginName.Split('\',2)[0] +'.corp.intel.com')
  $userList[$loginName]= $user.Name
+ }
    return $user.Name
  }
  return $userList[$loginName]
+}
+
+function SetCreditinal{
+$filePasw = Get-ChildItem -path $PSScriptRoot -filter *.psw -file -ErrorAction silentlycontinue -recurse
+$user = $filePasw[0].BaseName
+$keyFiles = Get-ChildItem -path $PSScriptRoot -filter AES.key -file -ErrorAction silentlycontinue -recurse 
+$key = Get-Content -path $keyFiles[0].Fullname
+
+return New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $user, (Get-Content $filePasw[0].FullName | ConvertTo-SecureString -Key $key)
+ 
 }
 
 $numHost= Read-Host -Prompt 'Please type 4 last numbers of host'
@@ -44,24 +68,21 @@ if ($numHost-match '^\d{4}$'){
 $hostName= 'ha01wvaw'+ $numHost
 if((Test-Connection $hostName -Quiet -Count 1)-eq $False){
 Write-Host "Host is unreachable"; break}
- 
-$filePasw= Get-ChildItem -path $PSScriptRoot -filter *.psw -file -ErrorAction silentlycontinue -recurse
-$user= $filePasw[0].BaseName
+  $credential = SetCreditinal
+  $pathLog = '\\' + $hostName + '\c$\ProgramData\RealVNC-Service'
 
-$keyFiles = Get-ChildItem -path $PSScriptRoot -filter AES.key -file -ErrorAction silentlycontinue -recurse 
-$key= Get-Content -path $keyFiles[0].Fullname
+  New-PSDrive -Name 'VNC_LOG' -PSProvider FileSystem -Root $pathLog -Credential $credential | Out-Null
 
-$credential= New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $user, (Get-Content $filePasw[0].FullName | ConvertTo-SecureString -Key $key)
-
-$pathLog= '\\'+ $hostName+ '\c$\ProgramData\RealVNC-Service'
-
-New-PSDrive -Name 'VNC_LOG' -PSProvider FileSystem -Root $pathLog -Credential $credential | Out-Null
 
 try{
 
 $pathFile = 'VNC_LOG:\'+ 'vncserver.log'
 
-#ii $pathFile
+If((Test-Path -Path $pathFile) -eq $False) 
+{
+Write-Host "Log folder $hostname is unreachable" break
+}
+Write-Host 'Log file is:'  $pathLog'\vncserver.log'
 
 $infoLog= Get-Content -path $pathFile 
  
@@ -71,18 +92,18 @@ ForEach($item in $infoLog){
  $itemSplit= $item.Tostring().split(' ')
  $user_Name= GetUsername($itemSplit[9]) 
  
- $date =$itemSplit[1].Replace("T", ' ').Substring(0,$itemSplit[1].length-5)
- $cureDate=Get-Date -Format "yyyy-MM-dd"
+ $connectDate =GetDateInfo($itemSplit[1]) 
+
  $computer= $itemSplit[6].Substring(0,$itemSplit[6].length-7)
 
  $color ="white"
 
- if ($date.Contains($cureDate)){ 
+ if ($currentUtcDate.DayOfYear -eq $connectDate.DayOfYear){ 
     $computer = GetHostName($computer) 
     $color= "green"   
    }
  
- $info = $itemSplit[1].Replace("T", ' ').Substring(0,$itemSplit[1].length-5)+ ' '+ $computer + ' '+ $user_Name 
+ $info = $connectDate.ToString() + ' '+ $computer + ' '+ $user_Name 
  
  Write-host $info -ForegroundColor $color
  
@@ -91,10 +112,11 @@ ForEach($item in $infoLog){
 
  if($item -match 'VNC Viewer closed'){
  $itemSplit= $item.Tostring().split(' ')
+  $dissconectDate =GetDateInfo($itemSplit[1]) 
  $computer = $itemSplit[6].Substring(0,$itemSplit[6].length-7)
- if ($date.Contains($cureDate)){ 
-    $computer = GetHostName($computer)    
-    $info = $itemSplit[1].Replace("T", ' ').Substring(0,$itemSplit[1].length-5)+ ' ' + $computer + ' ('+ $itemSplit[11] +')'
+ if ($currentUtcDate.DayOfYear -eq $dissconectDate.DayOfYear){ 
+    $computer = GetHostName($computer)     
+    $info = $dissconectDate.ToString()+ ' ' + $computer + ' ('+ $itemSplit[11] +')'
     Write-host $info -ForegroundColor "green"  
  }
   
