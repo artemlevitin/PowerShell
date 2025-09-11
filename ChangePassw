@@ -1,0 +1,16 @@
+#Script for Maxim Laptop change password send it to parents  via email 
+
+# $Password = Read-Host -AsSecureString "Enter the new password" Set-LocalUser -Name "Test_User" -Password $Password
+# pause
+
+$Password = Read-Host -AsSecureString "Enter the new password"
+$UserAccount = Get-LocalUser -Name "Test_User"
+$UserAccount | Set-LocalUser -Password $Password
+Pause
+
+# SMTP password hmfy ckvv bxui fppb
+# Set Up Your SMTP Client 
+# Server Address: smtp.gmail.com
+# Port: 465 (SSL) or 587 (TLS)
+# Username: Your full Gmail address
+# Password: The 16-digit App Password you generated
