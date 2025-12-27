@@ -4,7 +4,7 @@ $Key = New-Object Byte[] 24   # You can use 16, 24, or 32 for AES
 $Key | out-file $KeyFile
 
 
-$credential = Get-Credential -Message Password -UserName mvhlab@ger.corp.intel.com
+$credential = Get-Credential -Message Password -UserName mvhlab@ger.corp.contoso.com
 $passwFile = $PSScriptRoot+ '\'+ $credential.UserName+ '.psw'
 $credential.Password | ConvertFrom-SecureString -key $Key | Out-File $passwFile
 
