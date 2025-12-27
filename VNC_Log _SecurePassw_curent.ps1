@@ -44,7 +44,7 @@ param($loginName)
  }
  else{
 
- $user = Get-ADuser $loginName.Split('\',2)[1] -server ($loginName.Split('\',2)[0] +'.corp.intel.com')
+ $user = Get-ADuser $loginName.Split('\',2)[1] -server ($loginName.Split('\',2)[0] +'.corp.contoso.com')
  $userList[$loginName]= $user.Name
  }
    return $user.Name
