@@ -1,14 +1,40 @@
 #Script for Maxim Laptop change password send it to parents  via email 
+function Wait-ForConnection {
+    param (
+        [string]$Target = "gmail.com",
+        [int]$Port = 443,
+        [int]$Interval = 60
+    )
 
+    $connected = $false
+
+    while (-not $connected) {
+        try {
+            # Quiet returns a simple Boolean ($true/$false)
+            if (Test-NetConnection -ComputerName $Target -Port $Port -InformationLevel Quiet) {
+                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Connection established to $Target." -ForegroundColor Green
+                $connected = $true
+            } else {
+                throw "Target unreachable"
+            }
+        }
+        catch {
+            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Waiting for internet... Retrying in $Interval seconds." -ForegroundColor Gray
+            Start-Sleep -Seconds $Interval
+        }
+    }
+}
+
+Wait-ForConnection -Target "gmail.com" -Interval 60
 
 $Password = Get-Random -Minimum 1000 -Maximum 9999
 $UserAccount = Get-LocalUser -Name "Anya"
 $UserAccount | Set-LocalUser -Password (ConvertTo-SecureString $Password -AsPlainText -Force)
 
 
-$SMTP = "smt.gmail.com"
+$SMTP = "smtp.gmail.com"
 $From = "artem.levitin@gmail.com"
-$To = "artem.levitin@gmail.com"
+$To = "artem.levitin@gmail.com, anlevitina@gmail.com"
 $Subject = "Code Maxim " + $Password
 $Body = $Subject +" Date: " + (Get-Date).ToString()   
 $Email = New-Object Net.Mail.SmtpClient($SMTP, 587)
